@@ -1,19 +1,22 @@
 - hosts: all
   become: yes
   tasks:
-    - name: Update package lists
-      apt:
-        update_cache: yes
-
     - name: Install dependencies
       apt:
-        name: ["openjdk-11-jdk", "wget"]
+        name: ["openjdk-17-jdk", "wget", "curl", "gnupg"]
         state: present
+
+    - name: Add Jenkins GPG key
+      shell: |
+        curl -fsSL https://pkg.jenkins.io/debian/jenkins.io-2023.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
 
     - name: Add Jenkins repository
       shell: |
-        wget -q -O - https://pkg.jenkins.io/debian/jenkins.io.key | sudo apt-key add -
-        sudo sh -c 'echo deb http://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
+        echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] http://pkg.jenkins.io/debian-stable binary/" | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+
+    - name: Update package lists after adding Jenkins repo
+      apt:
+        update_cache: yes
 
     - name: Install Jenkins
       apt:
