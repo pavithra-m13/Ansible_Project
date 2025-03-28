@@ -1,5 +1,8 @@
-  hosts: all
+- hosts: all
   become: yes
+  vars:
+    jenkins_port: 9090
+
   tasks:
     - name: Stop Jenkins service
       systemd:
@@ -12,17 +15,15 @@
       ignore_errors: yes
 
     - name: Update Jenkins port in /etc/default/jenkins
-      lineinfile:
-        path: /etc/default/jenkins
-        regexp: '^HTTP_PORT='
-        line: 'HTTP_PORT=9090'
+      template:
+        src: jenkins.j2
+        dest: /etc/default/jenkins
       notify: Restart Jenkins
 
     - name: Modify Jenkins systemd service file
-      lineinfile:
-        path: /lib/systemd/system/jenkins.service
-        regexp: '^ExecStart='
-        line: 'ExecStart=/usr/bin/java -Djava.awt.headless=true -jar /usr/share/java/jenkins.war --webroot=/var/cache/jenkins/war --httpPort=9090'
+      template:
+        src: jenkins.service.j2
+        dest: /lib/systemd/system/jenkins.service
       notify: Reload systemd daemon
 
   handlers:
@@ -34,6 +35,3 @@
       systemd:
         name: jenkins
         state: restarted
-
-
-
